@@ -1,0 +1,7 @@
+contracts/out
+contracts/cache
+contracts/broadcast
+.bin
+.svm
+node_modules
+.env

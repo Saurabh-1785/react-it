@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Contracts Tests & Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Check Formatting
+        working-directory: contracts
+        run: FOUNDRY_PROFILE=ci forge fmt --check
+
+      - name: Build Contracts
+        working-directory: contracts
+        run: FOUNDRY_PROFILE=ci forge build --sizes
+
+      - name: Run Tests
+        working-directory: contracts
+        run: FOUNDRY_PROFILE=ci forge test -vvv
+
+      - name: Run Slither Analysis
+        uses: crytic/slither-action@v0.4.0
+        continue-on-error: true
+        with:
+          target: contracts
