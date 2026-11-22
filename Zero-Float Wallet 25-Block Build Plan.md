@@ -8,7 +8,10 @@ Reactive Omni Buildathon, track: **Every Second Counts** (time-sensitive DeFi on
 - This plan has **25 day-sized blocks**. Six calendar days carry two lighter blocks (see section 6). Every block ends with something you can verify on-chain or in a test run.
 - Do **not** backdate commits or claim 25 days of work. The rules say everything must be built during the event, the repo must be public, and git history is visible to judges. Honest dated commits plus a tx hash per block is the strongest evidence of effort you can give.
 - Blocks marked **(stretch)** can be cut without breaking the core loop. The cut list is at the end.
-- Daily close-out (15 minutes, inside every block): commit with the block tag, append new addresses and tx hashes to `DEPLOYMENTS.md`, write 5 lines in `docs/devlog.md`. This builds the Craft score as you go instead of in the last 24 hours.
+- Daily close-out (15 minutes, inside every block): com
+
+
+mit with the block tag, append new addresses and tx hashes to `DEPLOYMENTS.md`, write 5 lines in `docs/devlog.md`. This builds the Craft score as you go instead of in the last 24 hours.
 
 ## 1. Pitch
 
