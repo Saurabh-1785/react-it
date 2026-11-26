@@ -28,3 +28,17 @@
 - Created `MockUSD.sol` (6 decimals) stablecoin for testing payment flows.
 - Added test suite confirming exact CREATE2 address prediction, balance accounting, and access control.
 - Created `DeployBlock3And4.s.sol` deployment script for Base Sepolia.
+
+## [Block 5] - 2026-11-20: FloatPool & Invariant Testing
+- Implemented `FloatPool.sol` on Base Sepolia managing liquidity provider deposits, shares, and instant credit advances.
+- Built per-account debt ledger (`debt[account]`), aggregate `outstanding` tracker, and per-request lifecycle (`None`, `Fronted`, `Settled`, `Expired`).
+- Enforced risk controls: configurable 80% utilisation cap (`maxUtilisationBps`) and per-account credit limits (`defaultCreditLimit`).
+- Wrote extensive fuzz tests and an invariant testing suite (`FloatPoolInvariants.t.sol`) with `FloatPoolHandler`.
+- Verified solvency invariant (`pool assets + outstanding == totalDeposited`) over 128,000 calls across 256 runs with zero invariant violations.
+
+## [Block 6] - 2026-11-21: First Core Reactive Loop on Base Sepolia
+- Updated `PaymentRequestHub.sol` to complete payments by triggering `payMerchant` on caller smart accounts.
+- Enhanced `ZeroFloatReactive.sol` to intercept `PaymentRequested` and emit callbacks targeting `FloatCallbackReceiver.frontCallback`.
+- Wired `FloatCallbackReceiver.sol` to atomically front funds via `FloatPool.front` and complete the payment on `PaymentRequestHub.complete` in a single transaction.
+- Created `BaseLoopIntegration.t.sol` demonstrating that an account with ZERO float successfully fulfills merchant checkout inside deadline window, ending with 0 float balance.
+- Published latency benchmarks and theoretical breakdown in `LATENCY.md` (~2.45s round-trip).

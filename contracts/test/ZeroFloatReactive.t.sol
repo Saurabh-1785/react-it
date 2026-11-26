@@ -27,17 +27,11 @@ contract ZeroFloatReactiveTest is Test {
     );
 
     function setUp() public {
-        reactive = new ZeroFloatReactive(
-            BASE_CHAIN_ID,
-            HUB_ADDRESS,
-            address(0)
-        );
+        reactive = new ZeroFloatReactive(BASE_CHAIN_ID, HUB_ADDRESS, address(0));
     }
 
     function test_TopicMatchesPaymentRequestHub() public view {
-        bytes32 expectedTopic = keccak256(
-            "PaymentRequested(bytes32,address,address,address,uint256,uint256)"
-        );
+        bytes32 expectedTopic = keccak256("PaymentRequested(bytes32,address,address,address,uint256,uint256)");
         assertEq(reactive.paymentRequestedTopic(), uint256(expectedTopic));
     }
 
@@ -65,26 +59,12 @@ contract ZeroFloatReactiveTest is Test {
         emit Observed(requestId, block.timestamp);
 
         vm.expectEmit(true, true, true, true);
-        emit PaymentRequestObserved(
-            requestId,
-            user,
-            merchant,
-            token,
-            amount,
-            deadline
-        );
+        emit PaymentRequestObserved(requestId, user, merchant, token, amount, deadline);
 
         reactive.react(log);
 
-        assertTrue(
-            reactive.observedRequests(requestId),
-            "Request should be marked observed"
-        );
-        assertEq(
-            reactive.totalObserved(),
-            1,
-            "Total observed count should increment"
-        );
+        assertTrue(reactive.observedRequests(requestId), "Request should be marked observed");
+        assertEq(reactive.totalObserved(), 1, "Total observed count should increment");
     }
 
     function test_React_IgnoresWrongChainId() public {
@@ -135,11 +115,7 @@ contract ZeroFloatReactiveTest is Test {
         assertEq(reactive.totalObserved(), 0);
     }
 
-    function testFuzz_React(
-        bytes32 requestId,
-        uint256 amount,
-        uint32 duration
-    ) public {
+    function testFuzz_React(bytes32 requestId, uint256 amount, uint32 duration) public {
         vm.assume(duration >= 5);
         uint256 deadline = block.timestamp + duration;
 

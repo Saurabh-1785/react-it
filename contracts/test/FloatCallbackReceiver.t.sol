@@ -19,11 +19,25 @@ contract FloatCallbackReceiverTest is Test {
     bytes32 public sampleRequestId = keccak256("req_123");
 
     event Acked(bytes32 indexed requestId, address indexed rvmId);
-    event Callback(uint256 indexed chain_id, address indexed _contract, uint64 indexed gas_limit, bytes payload);
+    event Callback(
+        uint256 indexed chain_id,
+        address indexed _contract,
+        uint64 indexed gas_limit,
+        bytes payload
+    );
 
     function setUp() public {
-        receiver = new FloatCallbackReceiver(callbackProxy, rvmId);
-        reactive = new ZeroFloatReactive(BASE_CHAIN_ID, hubAddress, address(receiver));
+        receiver = new FloatCallbackReceiver(
+            callbackProxy,
+            rvmId,
+            address(0),
+            address(0)
+        );
+        reactive = new ZeroFloatReactive(
+            BASE_CHAIN_ID,
+            hubAddress,
+            address(receiver)
+        );
     }
 
     function test_Ack_Success() public {
@@ -57,7 +71,12 @@ contract FloatCallbackReceiverTest is Test {
         receiver.ack(rvmId, sampleRequestId);
 
         vm.prank(callbackProxy);
-        vm.expectRevert(abi.encodeWithSelector(FloatCallbackReceiver.RequestAlreadyAcked.selector, sampleRequestId));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                FloatCallbackReceiver.RequestAlreadyAcked.selector,
+                sampleRequestId
+            )
+        );
         receiver.ack(rvmId, sampleRequestId);
     }
 
@@ -96,10 +115,23 @@ contract FloatCallbackReceiverTest is Test {
             log_index: 0
         });
 
-        bytes memory expectedPayload = abi.encodeWithSignature("ack(address,bytes32)", address(0), reqId);
+        bytes memory expectedPayload = abi.encodeWithSignature(
+            "frontCallback(address,bytes32,address,address,address,uint256)",
+            address(0),
+            reqId,
+            address(0x1),
+            address(0x2),
+            address(0x3),
+            100
+        );
 
         vm.expectEmit(true, true, true, true);
-        emit Callback(BASE_CHAIN_ID, address(receiver), 300000, expectedPayload);
+        emit Callback(
+            BASE_CHAIN_ID,
+            address(receiver),
+            400000,
+            expectedPayload
+        );
 
         reactive.react(log);
     }

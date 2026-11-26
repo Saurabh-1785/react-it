@@ -12,11 +12,7 @@ contract DeployReactive is Script {
         address callbackReceiver = vm.envOr("CALLBACK_RECEIVER", address(0));
 
         vm.startBroadcast(deployerPrivateKey);
-        reactive = new ZeroFloatReactive(
-            baseChainId,
-            hubAddress,
-            callbackReceiver
-        );
+        reactive = new ZeroFloatReactive(baseChainId, hubAddress, callbackReceiver);
         vm.stopBroadcast();
 
         console.log("ZeroFloatReactive deployed at:", address(reactive));

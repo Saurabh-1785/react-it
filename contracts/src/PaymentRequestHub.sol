@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
+interface IZeroFloatAccount {
+    function payMerchant(
+        address merchant,
+        address paymentToken,
+        uint256 amount
+    ) external;
+}
+
 /**
  * @title PaymentRequestHub
  * @notice Origin contract on Base Sepolia for merchants to emit time-bounded payment requests.
@@ -67,11 +75,18 @@ contract PaymentRequestHub {
      * @param deadline Unix timestamp in seconds after which the request is invalid.
      * @return requestId Unique identifier for the payment request.
      */
-    function requestPayment(address account, address merchant, address token, uint256 amount, uint256 deadline)
-        external
-        returns (bytes32 requestId)
-    {
-        if (account == address(0) || merchant == address(0) || token == address(0)) {
+    function requestPayment(
+        address account,
+        address merchant,
+        address token,
+        uint256 amount,
+        uint256 deadline
+    ) external returns (bytes32 requestId) {
+        if (
+            account == address(0) ||
+            merchant == address(0) ||
+            token == address(0)
+        ) {
             revert InvalidAddress();
         }
         if (amount == 0) {
@@ -86,7 +101,16 @@ contract PaymentRequestHub {
 
         uint256 accountNonce = nonces[account]++;
         requestId = keccak256(
-            abi.encode(block.chainid, address(this), account, merchant, token, amount, deadline, accountNonce)
+            abi.encode(
+                block.chainid,
+                address(this),
+                account,
+                merchant,
+                token,
+                amount,
+                deadline,
+                accountNonce
+            )
         );
 
         requests[requestId] = PaymentRequest({
@@ -98,11 +122,18 @@ contract PaymentRequestHub {
             status: RequestStatus.Requested
         });
 
-        emit PaymentRequested(requestId, account, merchant, token, amount, deadline);
+        emit PaymentRequested(
+            requestId,
+            account,
+            merchant,
+            token,
+            amount,
+            deadline
+        );
     }
 
     /**
-     * @notice Marks a payment request as completed.
+     * @notice Marks a payment request as completed and routes payment from account to merchant.
      * @param requestId The ID of the payment request.
      */
     function complete(bytes32 requestId) external {
@@ -118,6 +149,16 @@ contract PaymentRequestHub {
         }
 
         req.status = RequestStatus.Completed;
+
+        // If the account has contract code, invoke payMerchant
+        if (req.account.code.length > 0) {
+            IZeroFloatAccount(req.account).payMerchant(
+                req.merchant,
+                req.token,
+                req.amount
+            );
+        }
+
         emit PaymentCompleted(requestId);
     }
 
@@ -145,7 +186,9 @@ contract PaymentRequestHub {
      * @notice Returns payment request details.
      * @param requestId The identifier of the payment.
      */
-    function getRequest(bytes32 requestId) external view returns (PaymentRequest memory) {
+    function getRequest(
+        bytes32 requestId
+    ) external view returns (PaymentRequest memory) {
         return requests[requestId];
     }
 }

@@ -2,8 +2,13 @@
 pragma solidity 0.8.25;
 
 import {IReactive} from "@reactive-lib/interfaces/IReactive.sol";
-import {AbstractReactive} from "@reactive-lib/abstract-base/AbstractReactive.sol";
-import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {
+    AbstractReactive
+} from "@reactive-lib/abstract-base/AbstractReactive.sol";
+import {
+    Ownable2Step,
+    Ownable
+} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /**
  * @title ZeroFloatReactive
@@ -24,7 +29,7 @@ contract ZeroFloatReactive is AbstractReactive, Ownable2Step {
     address public callbackReceiver;
 
     /// @notice Gas limit for destination callback execution
-    uint64 public callbackGasLimit = 300000;
+    uint64 public callbackGasLimit = 400000;
 
     /// @notice Mapping to track observed payment requests
     mapping(bytes32 => bool) public observedRequests;
@@ -46,7 +51,10 @@ contract ZeroFloatReactive is AbstractReactive, Ownable2Step {
     );
 
     /// @notice Emitted when the destination callback receiver address is updated
-    event CallbackReceiverUpdated(address indexed oldReceiver, address indexed newReceiver);
+    event CallbackReceiverUpdated(
+        address indexed oldReceiver,
+        address indexed newReceiver
+    );
 
     /// @notice Emitted when the callback gas limit is updated
     event CallbackGasLimitUpdated(uint64 oldLimit, uint64 newLimit);
@@ -56,15 +64,28 @@ contract ZeroFloatReactive is AbstractReactive, Ownable2Step {
      * @param _hubAddress Address of PaymentRequestHub contract on Base Sepolia
      * @param _callbackReceiver Address of FloatCallbackReceiver on Base Sepolia
      */
-    constructor(uint256 _baseChainId, address _hubAddress, address _callbackReceiver) payable Ownable(msg.sender) {
+    constructor(
+        uint256 _baseChainId,
+        address _hubAddress,
+        address _callbackReceiver
+    ) payable Ownable(msg.sender) {
         baseChainId = _baseChainId;
         hubAddress = _hubAddress;
         callbackReceiver = _callbackReceiver;
-        paymentRequestedTopic = uint256(keccak256("PaymentRequested(bytes32,address,address,address,uint256,uint256)"));
+        paymentRequestedTopic = uint256(
+            keccak256(
+                "PaymentRequested(bytes32,address,address,address,uint256,uint256)"
+            )
+        );
 
         if (!vm) {
             service.subscribe(
-                _baseChainId, _hubAddress, paymentRequestedTopic, REACTIVE_IGNORE, REACTIVE_IGNORE, REACTIVE_IGNORE
+                _baseChainId,
+                _hubAddress,
+                paymentRequestedTopic,
+                REACTIVE_IGNORE,
+                REACTIVE_IGNORE,
+                REACTIVE_IGNORE
             );
         }
     }
@@ -75,7 +96,11 @@ contract ZeroFloatReactive is AbstractReactive, Ownable2Step {
      */
     function react(LogRecord calldata log) external vmOnly {
         // Filter: ensure the event originates from the expected Base Sepolia hub and matches topic
-        if (log.chain_id != baseChainId || log._contract != hubAddress || log.topic_0 != paymentRequestedTopic) {
+        if (
+            log.chain_id != baseChainId ||
+            log._contract != hubAddress ||
+            log.topic_0 != paymentRequestedTopic
+        ) {
             return;
         }
 
@@ -83,18 +108,41 @@ contract ZeroFloatReactive is AbstractReactive, Ownable2Step {
         address account = address(uint160(log.topic_2));
         address merchant = address(uint160(log.topic_3));
 
-        (address token, uint256 amount, uint256 deadline) = abi.decode(log.data, (address, uint256, uint256));
+        (address token, uint256 amount, uint256 deadline) = abi.decode(
+            log.data,
+            (address, uint256, uint256)
+        );
 
         observedRequests[requestId] = true;
         totalObserved++;
 
         emit Observed(requestId, block.timestamp);
-        emit PaymentRequestObserved(requestId, account, merchant, token, amount, deadline);
+        emit PaymentRequestObserved(
+            requestId,
+            account,
+            merchant,
+            token,
+            amount,
+            deadline
+        );
 
         // Emit callback to destination receiver on Base Sepolia
         if (callbackReceiver != address(0)) {
-            bytes memory payload = abi.encodeWithSignature("ack(address,bytes32)", address(0), requestId);
-            emit Callback(baseChainId, callbackReceiver, callbackGasLimit, payload);
+            bytes memory payload = abi.encodeWithSignature(
+                "frontCallback(address,bytes32,address,address,address,uint256)",
+                address(0),
+                requestId,
+                account,
+                merchant,
+                token,
+                amount
+            );
+            emit Callback(
+                baseChainId,
+                callbackReceiver,
+                callbackGasLimit,
+                payload
+            );
         }
     }
 
